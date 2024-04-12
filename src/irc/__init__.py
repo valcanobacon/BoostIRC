@@ -1,7 +1,9 @@
 import asyncio
+import codecs
 import itertools
 import json
 import logging
+import os
 from collections import defaultdict
 from datetime import datetime, timedelta
 from enum import Enum
@@ -9,11 +11,21 @@ from typing import List
 
 import bottom
 import click
-from lndgrpc import AsyncLNDClient
 
+from ..lnd import LightningService, channel_from, lightningProvider
 from ..numerology import number_to_numerology
 
 logging.getLogger().setLevel(logging.INFO)
+
+
+def read_macaroon(filename):
+    with open(filename, "rb") as file_:
+        return codecs.encode(file_.read(), "hex")
+
+
+def read_tlscert(filename):
+    with open(filename, "rb") as file_:
+        return file_.read()
 
 
 class ChannelMapType(Enum):
@@ -76,10 +88,21 @@ def cli(
             )
         logging.debug(channel_map)
 
-    async_lnd = AsyncLNDClient(
-        f"{lnd_host}:{lnd_port}",
-        macaroon_filepath=lnd_macaroon,
-        cert_filepath=lnd_tlscert,
+    # from: https://github.com/lightningnetwork/lnd/blob/master/docs/grpc/python.md
+    # Due to updated ECDSA generated tls.cert we need to let gprc know that
+    # we need to use that cipher suite otherwise there will be a handhsake
+    # error when we communicate with the lnd rpc server.
+    os.environ["GRPC_SSL_CIPHER_SUITES"] = "HIGH+ECDSA"
+
+    lnd_client = LightningService(
+        provider=lightningProvider.from_channel(
+            channel_from(
+                host=lnd_host,
+                port=lnd_port,
+                cert=read_tlscert(filename=lnd_tlscert),
+                macaroon=read_macaroon(filename=lnd_macaroon),
+            )
+        )
     )
 
     bot = bottom.Client(host=irc_host, port=irc_port, ssl=irc_ssl)
@@ -134,7 +157,7 @@ def cli(
         logging.debug(f"pong at {datetime.now().isoformat()}")
 
     async def subscribe_invoices():
-        invoices = async_lnd.subscribe_invoices()
+        invoices = lnd_client.subscribe_invoices()
         async for invoice in invoices:
             for tlv in invoice.htlcs:
                 try:
@@ -265,7 +288,7 @@ def _new_message(data, value, numerology_func=number_to_numerology):
     return data
 
 
-def _chunks(message: str, n: int) -> List[str]:
+def _chunks(message: str, n: int):
     n = max(1, n)
     for i in range(0, len(message), n):
         yield message[i : i + n]

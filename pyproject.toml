@@ -9,8 +9,8 @@ authors = [{email = "boostaccount.w0v3n@aleeas.com"}]
 description = "Boost Bots"
 requires-python = ">=3.7"
 dependencies = [
-    "lnd-grpc-client<1,>=0.3.39",
     "click<9,>=8.0.3",
+    "grpcio<2,>=1.62",
 ]
 
 [project.optional-dependencies]
@@ -23,6 +23,7 @@ irc = ["bottom<3,>=2.2.0"]
 mastodon = ["atoot @ git+https://git@github.com/valcanobacon/atoot@1.0.2"] # egg=atoot
 matrix = ["matrix-nio<1,>=0.19.0"]
 nostr = ["nostr @ git+https://git@github.com/valcanobacon/python-nostr"] # egg=nostr
+dev = ["grpcio-tools<2,>=1.62"]
 
 [project.scripts]
 boostirc = "src.irc:cli"
