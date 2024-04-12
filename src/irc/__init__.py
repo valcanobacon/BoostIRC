@@ -158,6 +158,7 @@ def cli(
 
     async def subscribe_invoices():
         invoices = lnd_client.subscribe_invoices()
+        print(invoices)
         async for invoice in invoices:
             for tlv in invoice.htlcs:
                 try:

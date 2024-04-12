@@ -11,6 +11,7 @@ requires-python = ">=3.7"
 dependencies = [
     "click<9,>=8.0.3",
     "grpcio<2,>=1.62",
+    "aiogrpc<2,>=1.8",
 ]
 
 [project.optional-dependencies]

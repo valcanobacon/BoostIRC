@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from functools import wraps
 
 import grpc
+import aiogrpc
 
 from . import lightning_pb2 as ln
 from . import lightning_pb2_grpc as lnrpc
@@ -74,7 +75,7 @@ def channel_from(host: str, port: str, cert: bytes, macaroon: bytes) -> grpc.Cha
     auth_creds = grpc.metadata_call_credentials(metadata_callback)
     combined_creds = grpc.composite_channel_credentials(cert_creds, auth_creds)
 
-    channel = grpc.secure_channel(
+    channel = aiogrpc.secure_channel(
         f"{host}:{port}",
         combined_creds,
         # options=[
